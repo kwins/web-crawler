@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"time"
-	sched "webcrawler/scheduler"
+	sched "web-crawler/scheduler"
 )
 
 // 摘要信息的模板。

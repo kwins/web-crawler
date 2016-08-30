@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	mdw "webcrawler/middleware"
+	mdw "web-crawler/middleware"
 )
 
 // 生成网页下载器的函数类型。
 type GenPageDownloader func() PageDownloader
 
-// 网页下载器池的接口类型。
+// PageDownloaderPool 网页下载器池的接口类型。
 type PageDownloaderPool interface {
 	Take() (PageDownloader, error)  // 从池中取出一个网页下载器。
 	Return(dl PageDownloader) error // 把一个网页下载器归还给池。
@@ -18,7 +18,7 @@ type PageDownloaderPool interface {
 	Used() uint32                   // 获得正在被使用的网页下载器的数量。
 }
 
-// 创建网页下载器池。
+// NewPageDownloaderPool 创建网页下载器池。
 func NewPageDownloaderPool(total uint32, gen GenPageDownloader) (PageDownloaderPool, error) {
 	etype := reflect.TypeOf(gen())
 	genEntity := func() mdw.Entity {

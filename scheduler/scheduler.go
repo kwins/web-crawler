@@ -7,12 +7,12 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-	anlz "webcrawler/analyzer"
-	base "webcrawler/base"
-	dl "webcrawler/downloader"
-	ipl "webcrawler/itempipeline"
-	"webcrawler/logging"
-	mdw "webcrawler/middleware"
+	anlz "web-crawler/analyzer"
+	base "web-crawler/base"
+	dl "web-crawler/downloader"
+	ipl "web-crawler/itempipeline"
+	"web-crawler/logging"
+	mdw "web-crawler/middleware"
 )
 
 // 组件的统一代号。
@@ -29,7 +29,7 @@ var logger logging.Logger = base.NewLogger()
 // GenHttpClient 被用来生成HTTP客户端的函数类型。
 type GenHttpClient func() *http.Client
 
-// 调度器的接口类型。
+// Scheduler 调度器的接口类型。
 type Scheduler interface {
 	// 开启调度器。
 	// 调用该方法会使调度器创建和初始化各个组件。在此之后，调度器会激活爬取流程的执行。
@@ -355,9 +355,6 @@ func (sched *myScheduler) openItemPipeline() {
 				}
 			}
 		}
-		// for item := range sched.getItemChan() {
-		// 	// time.Sleep(time.Millisecond)
-		// }
 	}()
 }
 

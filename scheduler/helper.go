@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	anlz "webcrawler/analyzer"
-	base "webcrawler/base"
-	dl "webcrawler/downloader"
-	ipl "webcrawler/itempipeline"
-	mdw "webcrawler/middleware"
+	anlz "web-crawler/analyzer"
+	base "web-crawler/base"
+	dl "web-crawler/downloader"
+	ipl "web-crawler/itempipeline"
+	mdw "web-crawler/middleware"
 )
 
 func generateChannelManager(channelArgs base.ChannelArgs) mdw.ChannelManager {

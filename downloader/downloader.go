@@ -2,9 +2,9 @@ package downloader
 
 import (
 	"net/http"
-	base "webcrawler/base"
-	"webcrawler/logging"
-	mdw "webcrawler/middleware"
+	base "web-crawler/base"
+	"web-crawler/logging"
+	mdw "web-crawler/middleware"
 )
 
 // 日志记录器。
@@ -24,7 +24,7 @@ type PageDownloader interface {
 	Download(req base.Request) (*base.Response, error) // 根据请求下载网页并返回响应。
 }
 
-// 创建网页下载器。
+// NewPageDownloader 创建网页下载器。
 func NewPageDownloader(client *http.Client) PageDownloader {
 	id := genDownloaderId()
 	if client == nil {

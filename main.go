@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"webcrawler/analyzer"
-	base "webcrawler/base"
-	pipeline "webcrawler/itempipeline"
-	"webcrawler/logging"
-	sched "webcrawler/scheduler"
-	"webcrawler/tool"
+	"web-crawler/analyzer"
+	base "web-crawler/base"
+	pipeline "web-crawler/itempipeline"
+	"web-crawler/logging"
+	sched "web-crawler/scheduler"
+	"web-crawler/tool"
 )
 
 // 日志记录器。

@@ -1,8 +1,8 @@
 package base
 
-import "webcrawler/logging"
+import "web-crawler/logging"
 
-// 创建日志记录器。
+// NewLogger 创建日志记录器。
 func NewLogger() logging.Logger {
 	return logging.NewSimpleLogger()
 }

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"sync/atomic"
-	base "webcrawler/base"
+	base "web-crawler/base"
 )
 
-// 条目处理管道的接口类型。
+// ItemPipeline 条目处理管道的接口类型。
 type ItemPipeline interface {
 	// 发送条目。
 	Send(item base.Item) []error
@@ -26,7 +26,7 @@ type ItemPipeline interface {
 	Summary() string
 }
 
-// 创建条目处理管道。
+// NewItemPipeline 创建条目处理管道。
 func NewItemPipeline(itemProcessors []ProcessItem) ItemPipeline {
 	if itemProcessors == nil {
 		panic(errors.New(fmt.Sprintln("Invalid item processor list!")))

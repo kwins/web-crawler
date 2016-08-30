@@ -5,12 +5,12 @@ import (
 	"sync"
 )
 
-// ID生成器的接口类型。
+// IdGenerator ID生成器的接口类型。
 type IdGenerator interface {
 	GetUint32() uint32 // 获得一个uint32类型的ID。
 }
 
-// 创建ID生成器。
+// NewIdGenerator 创建ID生成器。
 func NewIdGenerator() IdGenerator {
 	return &cyclicIdGenerator{}
 }

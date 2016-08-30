@@ -3,17 +3,17 @@ package scheduler
 import (
 	"bytes"
 	"fmt"
-	base "webcrawler/base"
+	base "web-crawler/base"
 )
 
-// 调度器摘要信息的接口类型。
+// SchedSummary 调度器摘要信息的接口类型。
 type SchedSummary interface {
 	String() string               // 获得摘要信息的一般表示。
 	Detail() string               // 获取摘要信息的详细表示。
 	Same(other SchedSummary) bool // 判断是否与另一份摘要信息相同。
 }
 
-// 创建调度器摘要信息。
+// NewSchedSummary 创建调度器摘要信息。
 func NewSchedSummary(sched *myScheduler, prefix string) SchedSummary {
 	if sched == nil {
 		return nil
@@ -110,9 +110,9 @@ func (ss *mySchedSummary) getSummary(detail bool) string {
 		func() string {
 			if detail {
 				return ss.urlDetail
-			} else {
-				return "<concealed>\n"
 			}
+			return "<concealed>\n"
+
 		}(),
 		ss.stopSignSummary)
 }
@@ -139,7 +139,7 @@ func (ss *mySchedSummary) Same(other SchedSummary) bool {
 		ss.itemPipelineSummary != otherSs.itemPipelineSummary ||
 		ss.chanmanSummary != otherSs.chanmanSummary {
 		return false
-	} else {
-		return true
 	}
+	return true
+
 }

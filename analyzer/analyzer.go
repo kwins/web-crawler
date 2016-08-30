@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	base "webcrawler/base"
-	"webcrawler/logging"
-	mdw "webcrawler/middleware"
+	base "web-crawler/base"
+	"web-crawler/logging"
+	mdw "web-crawler/middleware"
 )
 
 // 日志记录器。

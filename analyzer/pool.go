@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	mdw "webcrawler/middleware"
+	mdw "web-crawler/middleware"
 )
 
-// 生成分析器的函数类型。
+// GenAnalyzer 生成分析器的函数类型。
 type GenAnalyzer func() Analyzer
 
-// 分析器池的接口类型。
+// AnalyzerPool 分析器池的接口类型。
 type AnalyzerPool interface {
 	Take() (Analyzer, error)        // 从池中取出一个分析器。
 	Return(analyzer Analyzer) error // 把一个分析器归还给池。

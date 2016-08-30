@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	base "webcrawler/base"
+	base "web-crawler/base"
 )
 
 // 被用来表示通道管理器的状态的类型。
@@ -23,7 +23,7 @@ var statusNameMap = map[ChannelManagerStatus]string{
 	CHANNEL_MANAGER_STATUS_CLOSED:        "closed",
 }
 
-// 通道管理器的接口类型。
+// ChannelManager 通道管理器的接口类型。
 type ChannelManager interface {
 	// 初始化通道管理器。
 	// 参数channelArgs代表通道参数的容器。
@@ -45,7 +45,7 @@ type ChannelManager interface {
 	Summary() string
 }
 
-// 创建通道管理器。
+// NewChannelManager 创建通道管理器。
 func NewChannelManager(channelArgs base.ChannelArgs) ChannelManager {
 	chanman := &myChannelManager{}
 	chanman.Init(channelArgs, true)

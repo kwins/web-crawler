@@ -3,7 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"sync"
-	base "webcrawler/base"
+	base "web-crawler/base"
 )
 
 // 状态字典。
