@@ -163,7 +163,7 @@ func (sched *myScheduler) Start(
 	sched.startDownloading()
 	sched.activateAnalyzers(respParsers)
 	sched.openItemPipeline()
-	sched.schedule(10 * time.Millisecond)
+	sched.schedule(100 * time.Millisecond)
 
 	if firstHttpReq == nil {
 		return errors.New("The first HTTP request is invalid!")
@@ -224,7 +224,7 @@ func (sched *myScheduler) startDownloading() {
 			if !ok {
 				break
 			}
-			go sched.download(req)
+			sched.download(req)
 		}
 	}()
 }

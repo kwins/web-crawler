@@ -143,8 +143,8 @@ func main() {
 	scheduler := sched.NewScheduler()
 
 	// 准备启动参数
-	channelArgs := base.NewChannelArgs(500, 500, 500, 100)
-	poolBaseArgs := base.NewPoolBaseArgs(1000, 1000)
+	channelArgs := base.NewChannelArgs(10, 10, 10, 10)
+	poolBaseArgs := base.NewPoolBaseArgs(100, 100)
 	crawlDepth := uint32(2)
 	httpClientGenerator := genHttpClient
 	respParsers := getResponseParsers()
