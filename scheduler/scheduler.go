@@ -66,6 +66,7 @@ func NewScheduler() Scheduler {
 }
 
 // 调度器的实现类型。
+// urlMap        map[string]bool
 type myScheduler struct {
 	channelArgs   base.ChannelArgs      // 通道参数的容器。
 	poolBaseArgs  base.PoolBaseArgs     // 池基本参数的容器。
@@ -77,7 +78,7 @@ type myScheduler struct {
 	analyzerPool  anlz.AnalyzerPool     // 分析器池。
 	itemPipeline  ipl.ItemPipeline      // 条目处理管道。
 	reqCache      requestCache          // 请求缓存。
-	urlMap        map[string]bool       // 已请求的URL的字典。
+	urlMap        *concurrentMap        // 已请求的URL的字典。
 	running       uint32                // 运行标记。0表示未运行，1表示已运行，2表示已停止。
 }
 
@@ -158,12 +159,13 @@ func (sched *myScheduler) Start(
 	}
 
 	sched.reqCache = newRequestCache()
-	sched.urlMap = make(map[string]bool)
+	sched.urlMap = newConcurrentMap()
 
-	sched.startDownloading()
-	sched.activateAnalyzers(respParsers)
-	sched.openItemPipeline()
-	sched.schedule(100 * time.Millisecond)
+	sched.run(respParsers)
+	// sched.startDownloading()
+	// sched.activateAnalyzers(respParsers)
+	// sched.openItemPipeline()
+	sched.schedule(time.Second)
 
 	if firstHttpReq == nil {
 		return errors.New("The first HTTP request is invalid!")
@@ -175,7 +177,9 @@ func (sched *myScheduler) Start(
 	sched.primaryDomain = pd
 
 	firstReq := base.NewRequest(firstHttpReq, 0)
+
 	sched.reqCache.put(firstReq)
+	// sched.getReqChan() <- *firstReq
 
 	return nil
 }
@@ -216,18 +220,70 @@ func (sched *myScheduler) Summary(prefix string) SchedSummary {
 	return NewSchedSummary(sched, prefix)
 }
 
-// 开始下载。
-func (sched *myScheduler) startDownloading() {
+func (sched *myScheduler) run(respParsers []anlz.ParseResponse) {
 	go func() {
+
+		sched.itemPipeline.SetFailFast(true)
+		code := ITEMPIPELINE_CODE
+
 		for {
-			req, ok := <-sched.getReqChan()
-			if !ok {
-				break
+
+			select {
+			case req, ok := <-sched.getReqChan():
+				{
+					if !ok {
+						logger.Error("<======Get (req) chan error")
+						continue
+					}
+					go sched.download(req)
+				}
+			case resp, ok := <-sched.getRespChan():
+				{
+					if !ok {
+						logger.Error("<======Get (resp) chan error")
+						continue
+					}
+					go sched.analyze(respParsers, resp)
+				}
+			case item, ok := <-sched.getItemChan():
+				{
+					if !ok {
+						logger.Error("<======Get (item) chan error")
+						continue
+					}
+					go func(item base.Item) {
+						defer func() {
+							if p := recover(); p != nil {
+								errMsg := fmt.Sprintf("致命的Item处理错误: %s\n", p)
+								logger.Error(errMsg)
+							}
+						}()
+						errs := sched.itemPipeline.Send(item)
+						if errs != nil {
+							for _, err := range errs {
+								sched.sendError(err, code)
+							}
+						}
+					}(item)
+					// time.Sleep(time.Microsecond)
+				}
 			}
-			sched.download(req)
 		}
 	}()
 }
+
+// 开始下载。
+// func (sched *myScheduler) startDownloading() {
+// 	go func() {
+// 		for {
+// 			req, ok := <-sched.getReqChan()
+// 			if !ok {
+// 				break
+// 			}
+// 			sched.download(req)
+// 		}
+// 	}()
+// }
 
 // 下载。
 // 1:获取downloader
@@ -265,18 +321,18 @@ func (sched *myScheduler) download(req base.Request) {
 }
 
 // 激活分析器。
-func (sched *myScheduler) activateAnalyzers(respParsers []anlz.ParseResponse) {
-	go func() {
-		for {
-			resp, ok := <-sched.getRespChan()
-			if !ok {
-				logger.Error("<======Get resp chan error")
-				break
-			}
-			go sched.analyze(respParsers, resp)
-		}
-	}()
-}
+// func (sched *myScheduler) activateAnalyzers(respParsers []anlz.ParseResponse) {
+// 	go func() {
+// 		for {
+// 			resp, ok := <-sched.getRespChan()
+// 			if !ok {
+// 				logger.Error("<======Get resp chan error")
+// 				break
+// 			}
+// 			go sched.analyze(respParsers, resp)
+// 		}
+// 	}()
+// }
 
 // 分析。
 func (sched *myScheduler) analyze(respParsers []anlz.ParseResponse, resp base.Response) {
@@ -310,6 +366,7 @@ func (sched *myScheduler) analyze(respParsers []anlz.ParseResponse, resp base.Re
 			switch d := data.(type) {
 			case *base.Request:
 				// 放入到请求缓存中
+				// sched.getReqChan() <- *d
 				sched.saveReqToCache(*d, code)
 			case *base.Item:
 				// 放入到条目通道中
@@ -328,35 +385,35 @@ func (sched *myScheduler) analyze(respParsers []anlz.ParseResponse, resp base.Re
 }
 
 // 打开条目处理管道。
-func (sched *myScheduler) openItemPipeline() {
-	go func() {
-		sched.itemPipeline.SetFailFast(true)
-		code := ITEMPIPELINE_CODE
-		// 等待条目管道条目
-		for {
-			select {
-			case item := <-sched.getItemChan():
-				{
-					go func(item base.Item) {
-						defer func() {
-							if p := recover(); p != nil {
-								errMsg := fmt.Sprintf("Fatal Item Processing Error: %s\n", p)
-								logger.Error(errMsg)
-							}
-						}()
-						errs := sched.itemPipeline.Send(item)
-						if errs != nil {
-							for _, err := range errs {
-								sched.sendError(err, code)
-							}
-						}
-					}(item)
-					time.Sleep(time.Microsecond)
-				}
-			}
-		}
-	}()
-}
+// func (sched *myScheduler) openItemPipeline() {
+// 	go func() {
+// 		sched.itemPipeline.SetFailFast(true)
+// 		code := ITEMPIPELINE_CODE
+// 		// 等待条目管道条目
+// 		for {
+// 			select {
+// 			case item := <-sched.getItemChan():
+// 				{
+// 					go func(item base.Item) {
+// 						defer func() {
+// 							if p := recover(); p != nil {
+// 								errMsg := fmt.Sprintf("Fatal Item Processing Error: %s\n", p)
+// 								logger.Error(errMsg)
+// 							}
+// 						}()
+// 						errs := sched.itemPipeline.Send(item)
+// 						if errs != nil {
+// 							for _, err := range errs {
+// 								sched.sendError(err, code)
+// 							}
+// 						}
+// 					}(item)
+// 					time.Sleep(time.Microsecond)
+// 				}
+// 			}
+// 		}
+// 	}()
+// }
 
 // 把请求存放到请求缓存。同时过滤不符合要求的请求,接收http或https的请求
 func (sched *myScheduler) saveReqToCache(req base.Request, code string) bool {
@@ -373,32 +430,44 @@ func (sched *myScheduler) saveReqToCache(req base.Request, code string) bool {
 		return false
 	}
 	// fmt.Println("req=============>>", reqURL.String())
+	// 忽略不是http or https的请求
 	scheme := strings.ToLower(reqURL.Scheme)
 	if scheme != "http" && scheme != "https" {
 		logger.Warnf("Ignore the request! It's url scheme '%s', but should be 'http'!\n", reqURL.Scheme)
 		return false
 	}
-	if _, ok := sched.urlMap[reqURL.String()]; ok {
-		logger.Warnf("Ignore the request! It's url is repeated. (requestUrl=%s)\n", reqURL)
-		return false
-	}
+
+	// if _, ok := sched.urlMap[reqURL.String()]; ok {
+	// 	logger.Warnf("Ignore the request! It's url is repeated. (requestUrl=%s)\n", reqURL)
+	// 	return false
+	// }
+
 	// 只抓取跟主域名相关的网页信息
 	if pd, _ := getPrimaryDomain(httpReq.Host); pd != sched.primaryDomain {
 		logger.Warnf("Ignore the request! It's host '%s' not in primary domain '%s'. (requestUrl=%s)\n",
 			httpReq.Host, sched.primaryDomain, reqURL)
 		return false
 	}
+
+	// 忽略深度大于爬取深度的请求
 	if req.Depth() > sched.crawlDepth {
 		logger.Warnf("Ignore the request! It's depth %d greater than %d. (requestUrl=%s)\n",
 			req.Depth(), sched.crawlDepth, reqURL)
 		return false
 	}
+
 	if sched.stopSign.Signed() {
 		sched.stopSign.Deal(code)
 		return false
 	}
+	// 忽略已存在的URL
+	if err := sched.urlMap.put(reqURL.String()); err != nil {
+		logger.Warnf("Ignore the request! It's url is repeated. (requestUrl=%s)\n", reqURL)
+		return false
+	}
+
 	sched.reqCache.put(&req)
-	sched.urlMap[reqURL.String()] = true
+	// sched.urlMap[reqURL.String()] = true
 	return true
 }
 
@@ -451,27 +520,42 @@ func (sched *myScheduler) sendError(err error, code string) bool {
 
 // 调度。适当的搬运请求缓存中的请求到请求通道。
 func (sched *myScheduler) schedule(interval time.Duration) {
+
 	go func() {
 		for {
+
 			if sched.stopSign.Signed() {
 				sched.stopSign.Deal(SCHEDULER_CODE)
 				return
 			}
-			// 当前请求通道空闲的位置，放入请求
-			remainder := cap(sched.getReqChan()) - len(sched.getReqChan())
-			var temp *base.Request
-			for remainder > 0 {
-				temp = sched.reqCache.get()
-				if temp == nil {
-					break
-				}
-				if sched.stopSign.Signed() {
-					sched.stopSign.Deal(SCHEDULER_CODE)
-					return
-				}
-				sched.getReqChan() <- *temp
-				remainder--
+
+			for _, req := range sched.reqCache.getAll() {
+
+				go func(req *base.Request) {
+					if sched.stopSign.Signed() {
+						sched.stopSign.Deal(SCHEDULER_CODE)
+						return
+					}
+					sched.getReqChan() <- *req
+				}(req)
 			}
+
+			sched.reqCache.reset()
+			// 当前请求通道空闲的位置，放入请求
+			// remainder := cap(sched.getReqChan()) - len(sched.getReqChan())
+			// var temp *base.Request
+			// for remainder > 0 {
+			// 	temp = sched.reqCache.get()
+			// 	if temp == nil {
+			// 		break
+			// 	}
+			// 	if sched.stopSign.Signed() {
+			// 		sched.stopSign.Deal(SCHEDULER_CODE)
+			// 		return
+			// 	}
+			// 	sched.getReqChan() <- *temp
+			// 	remainder--
+			// }
 			time.Sleep(interval)
 		}
 	}()

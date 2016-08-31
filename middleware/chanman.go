@@ -137,10 +137,8 @@ func (chanman *myChannelManager) checkStatus() error {
 	if chanman.status == CHANNEL_MANAGER_STATUS_INITIALIZED {
 		return nil
 	}
-	statusName, ok := statusNameMap[chanman.status]
-	if !ok {
-		statusName = fmt.Sprintf("%d", chanman.status)
-	}
+	statusName := statusNameMap[chanman.status]
+
 	errMsg := fmt.Sprintf("The undesirable status of channel manager: %s!\n", statusName)
 	return errors.New(errMsg)
 }

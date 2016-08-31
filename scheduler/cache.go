@@ -18,6 +18,8 @@ type requestCache interface {
 	put(req *base.Request) bool
 	// 从请求缓存获取最早被放入且仍在其中的请求。
 	get() *base.Request
+	// 从缓冲中获取所有的缓存请求
+	getAll() []*base.Request
 	// 获得请求缓存的容量。
 	capacity() int
 	// 获得请求缓存的实时长度，即：其中的请求的即时数量。
@@ -26,6 +28,8 @@ type requestCache interface {
 	close()
 	// 获取请求缓存的摘要信息。
 	summary() string
+	// 重置缓存
+	reset()
 }
 
 // 创建请求缓存。
@@ -56,6 +60,12 @@ func (rcache *reqCacheBySlice) put(req *base.Request) bool {
 	return true
 }
 
+func (rcache *reqCacheBySlice) getAll() []*base.Request {
+	rcache.mutex.Lock()
+	defer rcache.mutex.Unlock()
+	return rcache.cache
+}
+
 func (rcache *reqCacheBySlice) get() *base.Request {
 	if rcache.length() == 0 {
 		return nil
@@ -68,6 +78,18 @@ func (rcache *reqCacheBySlice) get() *base.Request {
 	req := rcache.cache[0]
 	rcache.cache = rcache.cache[1:]
 	return req
+}
+
+func (rcache *reqCacheBySlice) reset() {
+	if rcache.length() == 0 {
+		return
+	}
+	if rcache.status == 1 {
+		return
+	}
+	rcache.mutex.Lock()
+	defer rcache.mutex.Unlock()
+	rcache.cache = make([]*base.Request, 0)
 }
 
 func (rcache *reqCacheBySlice) capacity() int {

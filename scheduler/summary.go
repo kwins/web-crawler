@@ -18,12 +18,13 @@ func NewSchedSummary(sched *myScheduler, prefix string) SchedSummary {
 	if sched == nil {
 		return nil
 	}
-	urlCount := len(sched.urlMap)
+	// urlCount := len(sched.urlMap)
+	urlCount := sched.urlMap.len()
 	var urlDetail string
 	if urlCount > 0 {
 		var buffer bytes.Buffer
 		buffer.WriteByte('\n')
-		for k, _ := range sched.urlMap {
+		for k := range sched.urlMap.urls {
 			buffer.WriteString(prefix)
 			buffer.WriteString(prefix)
 			buffer.WriteString(k)

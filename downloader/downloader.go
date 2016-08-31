@@ -1,7 +1,9 @@
 package downloader
 
 import (
+	// "net"
 	"net/http"
+	// "time"
 	base "web-crawler/base"
 	"web-crawler/logging"
 	mdw "web-crawler/middleware"
@@ -28,7 +30,18 @@ type PageDownloader interface {
 func NewPageDownloader(client *http.Client) PageDownloader {
 	id := genDownloaderId()
 	if client == nil {
-		client = &http.Client{}
+		client = &http.Client{
+		// Transport: &http.Transport{
+		// 	Dial: func(netw, addr string) (net.Conn, error) {
+		// 		c, err := net.DialTimeout(netw, addr, time.Second) //设置建立连接超时
+		// 		if err != nil {
+		// 			return nil, err
+		// 		}
+		// 		c.SetDeadline(time.Now().Add(time.Second * 50)) //设置发送接收数据超时
+		// 		return c, nil
+		// 	},
+		// },
+		}
 	}
 	return &myPageDownloader{
 		id:         id,

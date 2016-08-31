@@ -195,7 +195,7 @@ func reportError(scheduler sched.Scheduler, record Record, stopNotifier <-chan b
 			// 	errMsg := fmt.Sprintf("Error (received from error channel): %s", err)
 			// 	record(2, errMsg)
 			// }
-			time.Sleep(time.Second)
+			// time.Sleep(time.Second)
 		}
 	}()
 }
